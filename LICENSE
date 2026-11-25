@@ -1,6 +1,7 @@
 MIT License
 
 Copyright (c) 2026 Zacccck
+Copyright (c) 2026 Danny Ho (modifications, see "Modifications" below)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,3 +20,32 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+--------------------------------------------------------------------------------
+Modifications
+--------------------------------------------------------------------------------
+
+This software is derived from the original work by Zacccck
+(https://github.com/Zacccck/Claude-MCP-Read-Email-Attachments). The following
+modifications are Copyright (c) 2026 Danny Ho and are released under the same
+MIT License terms above:
+
+- Read-only by default: removed unrestricted outbound mail and local file
+  access; the server requests only User.Read and Mail.Read unless email
+  composing is explicitly enabled.
+- Security hardening: upgraded vulnerable dependencies (pdf-to-img/pdfjs-dist,
+  sharp, adm-zip, zod, MCP SDK); disabled code evaluation in pdf.js for
+  untrusted PDFs; zip/rar/7z bomb protection with per-entry and per-archive
+  size budgets checked before decompression; stopped writing attachments to
+  the system temp folder.
+- Vietnamese OCR: scanned PDFs are OCR'd with Vietnamese + English by default
+  (configurable via M365_OCR_LANGS); language data cached in the app data dir.
+- Opt-in email composing: send_outlook_email and list_sendable_files tools
+  behind Claude Desktop extension toggles (drafts only, or send immediately),
+  recipient domain allowlist, attachments restricted to a chosen folder
+  (symlink/junction-safe) or copied from existing emails, large attachments
+  via Graph upload sessions, recipient/attachment/size limits, and MCP tool
+  annotations (read-only / destructive hints).
+- Refactor: split the single server.mjs into modules under src/ (config,
+  auth, graph, parsers, mail) with one file per tool, grouped into auth/,
+  read/ and send/.

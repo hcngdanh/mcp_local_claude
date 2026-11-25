@@ -1,0 +1,12 @@
+.env
+msal-cache.json 
+debug.log
+.git
+**/msal-cache.json
+**/debug.log
+*.traineddata
+*.mcpb
+.dockerignore
+Dockerfile
+glama.json
+.m365-attachment-reader-mcp-local/

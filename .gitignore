@@ -7,3 +7,6 @@ node_modules/
 
 # persistent MSAL token cache (contains refresh token — never commit)
 msal-cache.json
+
+# tesseract.js OCR language data cache
+*.traineddata

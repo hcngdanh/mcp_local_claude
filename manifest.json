@@ -1,13 +1,13 @@
 {
   "manifest_version": "0.2",
   "name": "m365-attachment-reader-mcp-local",
-  "display_name": "M365 Outlook Attachments (Read & Send)",
-  "version": "0.2.0",
-  "description": "Read Outlook email attachments and send local files (e.g. PPTX) as Outlook attachments locally inside Claude Desktop using Microsoft Graph.",
-  "long_description": "A local single-user MCP server for Claude Desktop that authenticates to Microsoft 365 using device code flow, lists Outlook messages and attachments, and parses attachment content including OCR-scanned PDFs, Word, PowerPoint, Excel, images, archives, and Outlook MSG files. It can also compose an Outlook email with local files attached (such as a daily dashboard .pptx) and either save it as a draft for review or send it immediately.",
+  "display_name": "M365 Outlook Attachments",
+  "version": "0.3.5",
+  "description": "Read Outlook emails and parse their attachments via Microsoft Graph. Optional, off-by-default email composing (drafts or send) with attachments.",
+  "long_description": "A local single-user MCP server for Claude Desktop that authenticates to Microsoft 365 using device code flow, lists Outlook messages and attachments, reads email bodies, and parses attachment content including OCR-scanned PDFs (Vietnamese + English), Word, PowerPoint, Excel, images, archives, and Outlook MSG files. By default it is read-only (Mail.Read). Email composing is opt-in via the extension settings: when enabled it creates Outlook drafts (Mail.ReadWrite), optionally sends immediately (Mail.Send), restricts recipients to allowed domains, and only attaches local files from a folder you choose.",
   "author": {
-    "name": "Zacccck",
-    "url": "https://github.com/Zacccck"
+    "name": "hcngdanh",
+    "url": "https://github.com/hcngdanh"
   },
   "server": {
     "type": "node",
@@ -21,8 +21,11 @@
         "M365_CLIENT_ID": "${user_config.m365_client_id}",
         "M365_TENANT_ID": "${user_config.m365_tenant_id}",
         "M365_AUTO_OPEN_BROWSER": "${user_config.m365_auto_open_browser}",
-        "M365_SEND_MAX_BYTES": "${user_config.m365_send_max_bytes}",
-        "M365_SEND_ALLOWED_DIRS": "${user_config.m365_send_allowed_dirs}"
+        "M365_OCR_LANGS": "${user_config.m365_ocr_langs}",
+        "M365_ENABLE_SEND": "${user_config.m365_enable_send}",
+        "M365_ALLOW_SEND_NOW": "${user_config.m365_allow_send_now}",
+        "M365_SEND_ALLOWED_DOMAINS": "${user_config.m365_send_allowed_domains}",
+        "M365_SEND_ALLOWED_DIRS": "${user_config.m365_send_attachments_dir}"
       }
     }
   },
@@ -47,16 +50,37 @@
       "required": false,
       "default": true
     },
-    "m365_send_max_bytes": {
-      "title": "Max outbound attachment size (bytes)",
-      "description": "Optional total size budget for send_outlook_email attachments. Defaults to 3 MB; must stay under Microsoft Graph's ~4 MB request limit. Leave blank to use the default.",
+    "m365_ocr_langs": {
+      "title": "OCR languages",
+      "description": "Tesseract language codes for OCR of scanned PDFs, joined by + (e.g. vie+eng). Language data is downloaded once on first use. Leave blank for vie+eng.",
+      "type": "string",
+      "required": false,
+      "default": "vie+eng"
+    },
+    "m365_enable_send": {
+      "title": "Enable email composing",
+      "description": "Allow Claude to create Outlook email drafts (with attachments). Off = strictly read-only. Turning this on requests Mail.ReadWrite: add it in Entra and run begin_auth again.",
+      "type": "boolean",
+      "required": false,
+      "default": false
+    },
+    "m365_allow_send_now": {
+      "title": "Allow sending immediately",
+      "description": "Allow Claude to send emails directly instead of only saving drafts. Requires \"Enable email composing\". Requests Mail.Send: add it in Entra and run begin_auth again.",
+      "type": "boolean",
+      "required": false,
+      "default": false
+    },
+    "m365_send_allowed_domains": {
+      "title": "Allowed recipient domains",
+      "description": "Optional comma-separated list (e.g. company.com, partner.vn). Leave blank to allow any recipient.",
       "type": "string",
       "required": false
     },
-    "m365_send_allowed_dirs": {
-      "title": "Allowed attachment directories",
-      "description": "Optional OS-path-separated list of base directories that send_outlook_email may read files from. Leave blank to allow any readable path.",
-      "type": "string",
+    "m365_send_attachments_dir": {
+      "title": "Attachments folder",
+      "description": "Folder Claude may attach local files from. Leave blank to disable local file attachments (attachments from existing emails still work).",
+      "type": "directory",
       "required": false
     }
   },
@@ -90,8 +114,24 @@
       "description": "Read the full text/body of a specific Outlook email (subject, sender, recipients, date, body)."
     },
     {
+      "name": "check_email_security",
+      "description": "Check emails for phishing and marketing signals: real link destinations, SPF/DKIM/DMARC, Microsoft spam/bulk scores, sender mismatches, risky attachments."
+    },
+    {
+      "name": "list_sendable_files",
+      "description": "List files in the configured attachments folder (only when email composing is enabled)."
+    },
+    {
       "name": "send_outlook_email",
-      "description": "Compose an Outlook email with local file attachments (e.g. a .pptx) and save it as a draft or send it immediately."
+      "description": "Create an Outlook draft or send an email, with optional attachments from the attachments folder or existing emails (only when email composing is enabled)."
+    },
+    {
+      "name": "reply_email",
+      "description": "Reply (or reply-all) to an existing Outlook email keeping the quoted thread, optionally with attachments, as a draft or sent immediately (only when email composing is enabled)."
+    },
+    {
+      "name": "forward_email",
+      "description": "Forward an existing Outlook email (keeping its original body and attachments) to new recipients, as a draft or sent immediately (only when email composing is enabled)."
     }
   ],
   "compatibility": {
@@ -102,7 +142,7 @@
       "linux"
     ],
     "runtimes": {
-      "node": ">=20.0.0"
+      "node": ">=22.13.0"
     }
   },
   "license": "MIT"

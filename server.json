@@ -1,19 +1,19 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-07-09/server.schema.json",
-  "name": "io.github.zacccck/m365-attachment-reader-mcp-local",
-  "description": "Local stdio MCP server for Claude Desktop that reads Outlook emails and message bodies, parses attachments (PDF/OCR/Word/PowerPoint/Excel/images/archives/MSG), and sends local files as Outlook attachments — via Microsoft Graph.",
+  "name": "io.github.hcngdanh/m365-attachment-reader-mcp-local",
+  "description": "Local stdio MCP server for Claude Desktop that reads Outlook emails and parses attachments (PDF/OCR/Word/PowerPoint/Excel/images/archives/MSG) via Microsoft Graph, with optional opt-in email drafting/sending.",
   "status": "active",
   "repository": {
-    "url": "https://github.com/Zacccck/Claude-MCP-Read-Email-Attachments",
+    "url": "https://github.com/hcngdanh/mcp_local_claude",
     "source": "github"
   },
-  "version": "0.2.0",
+  "version": "0.3.5",
   "packages": [
     {
       "registry_type": "npm",
       "registry_base_url": "https://registry.npmjs.org",
       "identifier": "m365-attachment-reader-mcp-local",
-      "version": "0.2.0",
+      "version": "0.3.5",
       "transport": {
         "type": "stdio"
       },
@@ -40,15 +40,36 @@
           "is_secret": false
         },
         {
-          "name": "M365_SEND_MAX_BYTES",
-          "description": "Optional total attachment-size budget (bytes) for send_outlook_email. Default 3145728 (3 MB); must stay under Graph's ~4 MB request limit.",
+          "name": "M365_OCR_LANGS",
+          "description": "Tesseract language codes for OCR of scanned PDFs, joined by + (default vie+eng). Language data is downloaded once and cached in the app data dir.",
+          "is_required": false,
+          "format": "string",
+          "is_secret": false
+        },
+        {
+          "name": "M365_ENABLE_SEND",
+          "description": "Set to true to enable the send_outlook_email tool (drafts only; requests Mail.ReadWrite). Default false = read-only.",
+          "is_required": false,
+          "format": "boolean",
+          "is_secret": false
+        },
+        {
+          "name": "M365_ALLOW_SEND_NOW",
+          "description": "Set to true to allow sending immediately (requests Mail.Send). Requires M365_ENABLE_SEND. Default false.",
+          "is_required": false,
+          "format": "boolean",
+          "is_secret": false
+        },
+        {
+          "name": "M365_SEND_ALLOWED_DOMAINS",
+          "description": "Optional comma-separated recipient domain allowlist. Empty = any recipient.",
           "is_required": false,
           "format": "string",
           "is_secret": false
         },
         {
           "name": "M365_SEND_ALLOWED_DIRS",
-          "description": "Optional OS-path-separated allowlist of directories send_outlook_email may read attachment files from. Empty (default) allows any readable path.",
+          "description": "OS-path-separated folders local attachments may come from. Empty = local file attachments disabled.",
           "is_required": false,
           "format": "string",
           "is_secret": false
